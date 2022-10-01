@@ -18,10 +18,12 @@ package org.springframework.remoting.rmi;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectInputStream;
 import java.rmi.server.RMIClassLoader;
 
 import org.springframework.core.ConfigurableObjectInputStream;
 import org.springframework.lang.Nullable;
+import org.springframework.util.ClassUtils;
 
 /**
  * Special ObjectInputStream subclass that falls back to a specified codebase
@@ -48,14 +50,30 @@ import org.springframework.lang.Nullable;
  * @author Juergen Hoeller
  * @since 1.1.3
  * @see java.rmi.server.RMIClassLoader
- * @see RemoteInvocationSerializingExporter#createObjectInputStream
- * @see org.springframework.remoting.httpinvoker.HttpInvokerClientInterceptor#setCodebaseUrl
  * @deprecated as of 5.3 (phasing out serialization-based remoting)
  */
 @Deprecated
 public class CodebaseAwareObjectInputStream extends ConfigurableObjectInputStream {
 
 	private final String codebaseUrl;
+
+	private ClassLoader beanClassLoader = ClassUtils.getDefaultClassLoader();
+
+	protected ClassLoader getBeanClassLoader() {
+		return this.beanClassLoader;
+	}
+	private boolean acceptProxyClasses = true;
+
+	public void setAcceptProxyClasses(boolean acceptProxyClasses) {
+		this.acceptProxyClasses = acceptProxyClasses;
+	}
+
+	public boolean isAcceptProxyClasses() {
+		return this.acceptProxyClasses;
+	}
+	protected ObjectInputStream createObjectInputStream(InputStream is) throws IOException {
+		return new CodebaseAwareObjectInputStream(is, getBeanClassLoader(), isAcceptProxyClasses());
+	}
 
 
 	/**
